@@ -47,6 +47,15 @@ must_use_candidate       = { level = "allow", priority = 1 }
 return_self_not_must_use = { level = "allow", priority = 1 }
 wildcard_imports         = { level = "allow", priority = 1 }
 
+as_conversions           = { level = "allow", priority = 1 }
+cast_possible_truncation = { level = "allow", priority = 1 }
+cast_possible_wrap       = { level = "allow", priority = 1 }
+cast_sign_loss           = { level = "allow", priority = 1 }
+doc_markdown             = { level = "allow", priority = 1 }
+len_without_is_empty     = { level = "allow", priority = 1 }
+new_without_default      = { level = "allow", priority = 1 }
+transmute_ptr_to_ptr     = { level = "allow", priority = 1 }
+self_named_constructors  = { level = "allow", priority = 1 }
 
 [profile.release]
 codegen-units = 1
