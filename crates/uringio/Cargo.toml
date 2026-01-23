@@ -15,6 +15,7 @@ crate-type = ["cdylib", "rlib", "staticlib"]
 default = ["features-checker", "unstable-toolchain"]
 
 features-checker   = []
+mimalloc           = ["dep:mimalloc"]
 unstable-toolchain = []
 
 
@@ -23,4 +24,8 @@ workspace = true
 
 
 [dependencies]
+mimalloc           = { workspace = true, optional = true }
+tracing            = { workspace = true, features = ["attributes", "release_max_level_info"] }
+tracing-subscriber = { workspace = true, features = ["ansi", "env-filter", "fmt", "smallvec", "std", "tracing-log"] }
+
 rustix = { version = "1.1.3", default-features = false, features = ["io_uring", "mm", "std"], git = "ssh://git@github.com/h3clabs/rustix.git", branch = "main" }
