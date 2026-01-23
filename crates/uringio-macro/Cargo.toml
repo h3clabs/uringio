@@ -1,0 +1,19 @@
+[package]
+name = "uringio-macro"
+
+description = "uringio-macro"
+edition     = { workspace = true }
+license     = { workspace = true }
+version     = { workspace = true }
+
+
+[lib]
+proc-macro = true
+
+
+[lints]
+workspace = true
+
+
+[dependencies]
+syn = { workspace = true, features = ["clone-impls", "derive", "parsing", "printing", "proc-macro"] }

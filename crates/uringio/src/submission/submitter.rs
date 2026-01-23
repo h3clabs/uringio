@@ -1,6 +1,6 @@
 use crate::{
     completion::entry::{Cqe16, Cqe32, CqeMix},
-    operator::{Op, nop::Nop128},
+    operator::{Op, noop::Nop128},
     platform::iouring::IoUringEnterFlags,
     shared::{
         error::Result,

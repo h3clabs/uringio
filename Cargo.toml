@@ -10,7 +10,8 @@ version = "0.1.0"
 
 [workspace.dependencies]
 # Member
-uringio = { path = "crates/uringio", version = "0.1.0" }
+uringio       = { path = "crates/uringio", version = "0.1.0" }
+uringio-macro = { path = "crates/uringio-macro", version = "0.1.0" }
 
 clap               = { default-features = false, version = "4.5" }
 config             = { default-features = false, version = "0.15" }
@@ -19,6 +20,9 @@ serde              = { default-features = false, version = "1" }
 thiserror          = { default-features = false, version = "2.0" }
 tracing            = { default-features = false, version = "0.1" }
 tracing-subscriber = { default-features = false, version = "0.3" }
+
+# Macro
+syn = { default-features = false, version = "2.0" }
 
 # Build
 

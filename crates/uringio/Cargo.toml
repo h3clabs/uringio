@@ -24,6 +24,8 @@ workspace = true
 
 
 [dependencies]
+uringio-macro = { workspace = true }
+
 mimalloc           = { workspace = true, optional = true }
 tracing            = { workspace = true, features = ["attributes", "release_max_level_info"] }
 tracing-subscriber = { workspace = true, features = ["ansi", "env-filter", "fmt", "smallvec", "std", "tracing-log"] }

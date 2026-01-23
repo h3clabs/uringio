@@ -1,8 +1,7 @@
 pub mod fd;
-pub mod fs;
-pub mod net;
-pub mod nop;
+pub mod noop;
 pub mod opcode;
+pub mod read;
 
 use crate::{
     platform::iouring::IoUringOp,

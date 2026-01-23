@@ -291,6 +291,14 @@ dependencies = [
  "rustix",
  "tracing",
  "tracing-subscriber",
+ "uringio-macro",
+]
+
+[[package]]
+name = "uringio-macro"
+version = "0.1.0"
+dependencies = [
+ "syn",
 ]
 
 [[package]]

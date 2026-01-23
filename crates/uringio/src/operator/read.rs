@@ -6,10 +6,12 @@ use crate::{
         io::ReadWriteFlags,
         iouring::{IoUringOp, IoUringPiAttr, IoUringPtr, IoUringSqeFlags, IoUringUserData, RawFd},
     },
+    shared::macros::op,
     submission::entry::Sqe64,
 };
 
 #[derive(Debug)]
+#[op(Read, Entry = Sqe64)]
 #[repr(C)]
 pub struct Read<'fd, 'dst> {
     pub opcode: IoUringOp,
@@ -20,6 +22,7 @@ pub struct Read<'fd, 'dst> {
     pub ptr: IoUringPtr,
     pub len: u32,
     pub rw_flags: ReadWriteFlags,
+    #[setter]
     pub user_data: IoUringUserData,
     _unused0_: [u8; 2],
     pub personality: u16,
@@ -27,12 +30,6 @@ pub struct Read<'fd, 'dst> {
     pub pi_attr: IoUringPiAttr,
 
     _marker_: PhantomData<(&'fd (), &'dst mut [u8])>,
-}
-
-impl Op for Read<'_, '_> {
-    type Entry = Sqe64;
-
-    const OP_CODE: IoUringOp = IoUringOp::Read;
 }
 
 impl<'fd, 'dst> Read<'fd, 'dst> {
@@ -56,15 +53,5 @@ impl<'fd, 'dst> Read<'fd, 'dst> {
             pi_attr: Default::default(),
             _marker_: PhantomData,
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_size_align() {
-        Read::check_size_align();
     }
 }
