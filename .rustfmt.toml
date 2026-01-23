@@ -1,0 +1,34 @@
+# Configuring Rustfmt
+# https://rust-lang.github.io/rustfmt
+# https://github.com/rust-lang/rustfmt/blob/master/Configurations.md
+
+# Misc
+edition           = "2024"
+unstable_features = true
+
+# Fundamental
+combine_control_expr       = false
+force_multiline_blocks     = true
+match_block_trailing_comma = true
+newline_style              = "Unix"
+overflow_delimited_expr    = true
+trailing_semicolon         = false
+use_field_init_shorthand   = true
+use_small_heuristics       = "Max"
+use_try_shorthand          = true
+
+# Comments
+format_code_in_doc_comments = true
+normalize_comments          = true
+
+# Imports
+group_imports       = "StdExternalCrate"
+imports_granularity = "Crate"
+
+# Ordering
+reorder_impl_items = true
+reorder_imports    = true
+
+# Marco
+format_macro_bodies   = true
+format_macro_matchers = true

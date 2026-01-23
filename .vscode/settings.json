@@ -1,0 +1,33 @@
+{
+	"nixEnvSelector.nixFile": "${workspaceFolder}/shell.nix",
+    "cSpell.words": [
+        "cdylib",
+        "cqes",
+        "cqring",
+        "cqsize",
+        "direnv",
+        "getevents",
+        "hugepage",
+        "iopoll",
+        "ioprio",
+        "ioring",
+        "iouring",
+        "mmap",
+        "munmap",
+        "nodrop",
+        "repr",
+        "rlib",
+        "rsrc",
+        "rustix",
+        "sqarray",
+        "sqes",
+        "sqpoll",
+        "sqsize",
+        "staticlib",
+        "taskrun",
+        "uring",
+        "uringio",
+        "userspace",
+        "wakeup"
+    ]
+}

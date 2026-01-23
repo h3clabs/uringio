@@ -1,0 +1,1 @@
+pub const DEFAULT_SQ_POLL_IDLE: u32 = 1000;

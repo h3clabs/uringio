@@ -1,0 +1,26 @@
+[package]
+name = "uringio"
+
+description = "uringio"
+edition     = { workspace = true }
+license     = { workspace = true }
+version     = { workspace = true }
+
+
+[lib]
+crate-type = ["cdylib", "rlib", "staticlib"]
+
+
+[features]
+default = ["features-checker", "unstable-toolchain"]
+
+features-checker   = []
+unstable-toolchain = []
+
+
+[lints]
+workspace = true
+
+
+[dependencies]
+rustix = { version = "1.1.3", default-features = false, features = ["io_uring", "mm", "std"], git = "ssh://git@github.com/h3clabs/rustix.git", branch = "main" }
