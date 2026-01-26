@@ -7,7 +7,7 @@ use std::{
 use crate::{
     platform::{
         iouring::{IoUringParams, IoUringSetupFlags},
-        mmap::Mmap,
+        mmap::Ptr,
     },
     shared::error::err,
 };
@@ -19,30 +19,30 @@ pub struct SubmissionIndex<'fd> {
 }
 
 #[inline]
-const fn submission_indices<'fd>(sq_mmap: &Mmap, params: &IoUringParams) -> &'fd mut [u32] {
+const fn submission_indices<'fd>(sq: Ptr, params: &IoUringParams) -> &'fd mut [u32] {
     unsafe {
         let IoUringParams { sq_off, .. } = params;
-        let head = sq_mmap.offset(sq_off.array).cast::<u32>();
-        let size = sq_mmap.offset(sq_off.ring_entries).cast::<u32>().read();
+        let head = sq.byte_add(sq_off.array as _).cast::<u32>();
+        let size = sq.byte_add(sq_off.ring_entries as _).cast::<u32>().read();
         from_raw_parts_mut(head.as_ptr(), size as usize)
     }
 }
 
 impl SubmissionIndex<'_> {
-    pub fn new(sq_mmap: &Mmap, params: &IoUringParams) -> Result<Self> {
+    pub fn new(sq: Ptr, params: &IoUringParams) -> Result<Self> {
         if params.flags.contains(IoUringSetupFlags::NO_SQARRAY) {
             return err!("IoUring setup with IORING_SETUP_NO_SQARRAY flag");
         }
 
-        Ok(Self { indices: submission_indices(sq_mmap, params) })
+        Ok(Self { indices: submission_indices(sq, params) })
     }
 
-    pub fn setup(sq_mmap: &Mmap, params: &IoUringParams) {
+    pub fn setup(sq: Ptr, params: &IoUringParams) {
         if params.flags.contains(IoUringSetupFlags::NO_SQARRAY) {
             return;
         }
 
-        let indices = submission_indices(sq_mmap, params);
+        let indices = submission_indices(sq, params);
 
         for (idx, item) in indices.iter_mut().enumerate() {
             *item = idx as u32;

@@ -6,17 +6,15 @@ use std::{
 };
 
 use crate::{
-    platform::{
-        iouring::{IoUringParams, IoUringSqFlags},
-        mmap::Mmap,
-    },
+    arena::Arena,
+    platform::iouring::{IoUringParams, IoUringSqFlags},
     submission::{index::SubmissionIndex, submitter::Submitter},
     uring::mode::Mode,
 };
 
 /// ## Submission Queue
 #[derive(Debug)]
-pub struct SubmissionQueue<'fd, M, S, C> {
+pub struct SubmissionQueue<'fd, A, M, S, C> {
     pub sqes: NonNull<S>,
     pub k_head: &'fd AtomicU32,
     pub k_tail: &'fd AtomicU32,
@@ -25,27 +23,34 @@ pub struct SubmissionQueue<'fd, M, S, C> {
     pub k_flags: &'fd AtomicU32,
     pub k_dropped: &'fd AtomicU32,
 
-    _marker_: PhantomData<(M, C)>,
+    _marker_: PhantomData<(A, M, C)>,
 }
 
-impl<M, S, C> SubmissionQueue<'_, M, S, C> {
-    pub unsafe fn new(sq_mmap: &Mmap, sqes_mmap: &Mmap, params: &IoUringParams) -> Self {
+impl<A, M, S, C> SubmissionQueue<'_, A, M, S, C>
+where
+    A: Arena<M, S, C>,
+{
+    pub unsafe fn new(arena: &A, params: &IoUringParams) -> Self {
         let IoUringParams { sq_off, .. } = params;
 
+        let sq = arena.sq();
         unsafe {
-            let sqes = sqes_mmap.ptr().cast();
-            let k_head = sq_mmap.offset(sq_off.head).cast().as_ref();
-            let k_tail = sq_mmap.offset(sq_off.tail).cast().as_ref();
-            let mask = sq_mmap.offset(sq_off.ring_mask).cast().read();
-            let size = sq_mmap.offset(sq_off.ring_entries).cast().read();
-            let k_flags = sq_mmap.offset(sq_off.flags).cast().as_ref();
-            let k_dropped = sq_mmap.offset(sq_off.dropped).cast().as_ref();
-            SubmissionIndex::setup(sq_mmap, params);
+            let sqes = arena.sqes().cast();
+
+            let k_head = sq.byte_add(sq_off.head as _).cast().as_ref();
+            let k_tail = sq.byte_add(sq_off.tail as _).cast().as_ref();
+            let mask = sq.byte_add(sq_off.ring_mask as _).cast().read();
+            let size = sq.byte_add(sq_off.ring_entries as _).cast().read();
+            let k_flags = sq.byte_add(sq_off.flags as _).cast().as_ref();
+            let k_dropped = sq.byte_add(sq_off.dropped as _).cast().as_ref();
+            SubmissionIndex::setup(sq, params);
 
             Self { sqes, k_head, k_tail, mask, size, k_flags, k_dropped, _marker_: PhantomData }
         }
     }
+}
 
+impl<A, M, S, C> SubmissionQueue<'_, A, M, S, C> {
     pub fn flags(&self, order: Ordering) -> IoUringSqFlags {
         let bits = self.k_flags.load(order);
         IoUringSqFlags::from_bits_retain(bits)
@@ -74,7 +79,7 @@ impl<M, S, C> SubmissionQueue<'_, M, S, C> {
     }
 }
 
-impl<'fd, M, S, C> SubmissionQueue<'fd, M, S, C>
+impl<'fd, A, M, S, C> SubmissionQueue<'fd, A, M, S, C>
 where
     M: Mode,
 {
@@ -94,12 +99,12 @@ where
         M::set_sq_tail(self, tail);
     }
 
-    pub fn submitter(&mut self) -> Submitter<'_, 'fd, M, S, C> {
+    pub fn submitter(&mut self) -> Submitter<'_, 'fd, A, M, S, C> {
         Submitter { head: self.head(), tail: self.tail(), queue: self }
     }
 }
 
-impl<M, S, C> Index<u32> for SubmissionQueue<'_, M, S, C> {
+impl<A, M, S, C> Index<u32> for SubmissionQueue<'_, A, M, S, C> {
     type Output = S;
 
     #[inline]
@@ -109,7 +114,7 @@ impl<M, S, C> Index<u32> for SubmissionQueue<'_, M, S, C> {
     }
 }
 
-impl<M, S, C> IndexMut<u32> for SubmissionQueue<'_, M, S, C> {
+impl<A, M, S, C> IndexMut<u32> for SubmissionQueue<'_, A, M, S, C> {
     #[inline]
     fn index_mut(&mut self, index: u32) -> &mut Self::Output {
         unsafe { self.get_sqe(index).as_mut() }

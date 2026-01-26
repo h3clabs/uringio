@@ -18,8 +18,9 @@ pub struct FixFd {
 impl FixFd {
     /// Unsafe: idx <= Fd limit <= i32::MAX
     pub const unsafe fn new(idx: usize) -> Self {
+        debug_assert!(idx <= i32::MAX as usize);
+
         // FIXME: overflow
-        #![allow(clippy::cast_possible_truncation)]
         Self { idx: idx as _ }
     }
 }

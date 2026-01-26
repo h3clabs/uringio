@@ -6,17 +6,15 @@ use std::{
 };
 
 use crate::{
+    arena::Arena,
     completion::collector::Collector,
-    platform::{
-        iouring::{IoUringCqFlags, IoUringParams, IoUringSqFlags},
-        mmap::Mmap,
-    },
+    platform::iouring::{IoUringCqFlags, IoUringParams, IoUringSqFlags},
     uring::mode::Mode,
 };
 
 /// ## Completion Queue
 #[derive(Debug)]
-pub struct CompletionQueue<'fd, M, S, C> {
+pub struct CompletionQueue<'fd, A, M, S, C> {
     pub cqes: NonNull<C>,
     pub k_head: &'fd AtomicU32,
     pub k_tail: &'fd AtomicU32,
@@ -27,23 +25,26 @@ pub struct CompletionQueue<'fd, M, S, C> {
 
     pub k_sq_flags: &'fd AtomicU32,
 
-    _marker_: PhantomData<(M, S)>,
+    _marker_: PhantomData<(A, M, S)>,
 }
 
-impl<M, S, C> CompletionQueue<'_, M, S, C> {
-    pub const unsafe fn new(sq_mmap: &Mmap, cq_mmap: &Mmap, params: &IoUringParams) -> Self {
+impl<A, M, S, C> CompletionQueue<'_, A, M, S, C>
+where
+    A: Arena<M, S, C>,
+{
+    pub unsafe fn new(arena: &A, params: &IoUringParams) -> Self {
         let IoUringParams { sq_off, cq_off, .. } = params;
 
+        let cq = arena.cq();
         unsafe {
-            let cqes = cq_mmap.offset(cq_off.cqes).cast();
-            let k_head = cq_mmap.offset(cq_off.head).cast().as_ref();
-            let k_tail = cq_mmap.offset(cq_off.tail).cast().as_ref();
-            let mask = cq_mmap.offset(cq_off.ring_mask).cast().read();
-            let size = cq_mmap.offset(cq_off.ring_entries).cast().read();
-            let k_flags = cq_mmap.offset(cq_off.flags).cast().as_ref();
-            let k_overflow = cq_mmap.offset(cq_off.overflow).cast().as_ref();
-
-            let k_sq_flags = sq_mmap.offset(sq_off.flags).cast().as_ref();
+            let cqes = cq.byte_add(cq_off.cqes as _).cast::<C>();
+            let k_head = cq.byte_add(cq_off.head as _).cast().as_ref();
+            let k_tail = cq.byte_add(cq_off.tail as _).cast().as_ref();
+            let mask = cq.byte_add(cq_off.ring_mask as _).cast().read();
+            let size = cq.byte_add(cq_off.ring_entries as _).cast().read();
+            let k_flags = cq.byte_add(cq_off.flags as _).cast().as_ref();
+            let k_overflow = cq.byte_add(cq_off.overflow as _).cast().as_ref();
+            let k_sq_flags = cq.byte_add(sq_off.flags as _).cast().as_ref();
 
             Self {
                 cqes,
@@ -58,7 +59,9 @@ impl<M, S, C> CompletionQueue<'_, M, S, C> {
             }
         }
     }
+}
 
+impl<A, M, S, C> CompletionQueue<'_, A, M, S, C> {
     pub fn flags(&self, order: Ordering) -> IoUringCqFlags {
         let bits = self.k_flags.load(order);
         IoUringCqFlags::from_bits_retain(bits)
@@ -81,7 +84,7 @@ impl<M, S, C> CompletionQueue<'_, M, S, C> {
     }
 }
 
-impl<'fd, M, S, C> CompletionQueue<'fd, M, S, C>
+impl<'fd, A, M, S, C> CompletionQueue<'fd, A, M, S, C>
 where
     M: Mode,
 {
@@ -101,12 +104,12 @@ where
         self.k_head.store(head, Ordering::Release);
     }
 
-    pub fn collector(&mut self) -> Collector<'_, 'fd, M, S, C> {
+    pub fn collector(&mut self) -> Collector<'_, 'fd, A, M, S, C> {
         Collector { head: self.head(), tail: self.tail(), queue: self }
     }
 }
 
-impl<M, S, C> Index<u32> for CompletionQueue<'_, M, S, C> {
+impl<A, M, S, C> Index<u32> for CompletionQueue<'_, A, M, S, C> {
     type Output = C;
 
     #[inline]
@@ -116,7 +119,7 @@ impl<M, S, C> Index<u32> for CompletionQueue<'_, M, S, C> {
     }
 }
 
-impl<M, S, C> IndexMut<u32> for CompletionQueue<'_, M, S, C> {
+impl<A, M, S, C> IndexMut<u32> for CompletionQueue<'_, A, M, S, C> {
     #[inline]
     fn index_mut(&mut self, index: u32) -> &mut Self::Output {
         unsafe { self.get_cqe(index).as_mut() }

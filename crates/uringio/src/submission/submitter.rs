@@ -4,6 +4,7 @@ use crate::{
     platform::iouring::IoUringEnterFlags,
     shared::{
         error::Result,
+        log::debug,
         null::{NULL, Null},
     },
     submission::{
@@ -18,16 +19,16 @@ use crate::{
 
 /// ## Submitter
 #[derive(Debug)]
-pub struct Submitter<'s, 'fd, M, S, C>
+pub struct Submitter<'s, 'fd, A, M, S, C>
 where
     M: Mode,
 {
     pub(crate) head: u32,
     pub(crate) tail: u32,
-    pub queue: &'s mut SubmissionQueue<'fd, M, S, C>,
+    pub queue: &'s mut SubmissionQueue<'fd, A, M, S, C>,
 }
 
-impl<M, S, C> Submitter<'_, '_, M, S, C>
+impl<A, M, S, C> Submitter<'_, '_, A, M, S, C>
 where
     M: Mode,
 {
@@ -71,7 +72,7 @@ where
     }
 }
 
-impl<M, S, C> Drop for Submitter<'_, '_, M, S, C>
+impl<A, M, S, C> Drop for Submitter<'_, '_, A, M, S, C>
 where
     M: Mode,
 {
@@ -84,8 +85,8 @@ pub trait Submit<T> {
     fn push(&mut self, item: T) -> Result<Null, T>;
 }
 
-// Submit to Sqe64 Queue
-impl<M> Submit<Sqe64> for Submitter<'_, '_, M, Sqe64, Cqe16>
+// Submit Sqe64 to Sqe64 Queue
+impl<A, M> Submit<Sqe64> for Submitter<'_, '_, A, M, Sqe64, Cqe16>
 where
     M: Mode,
 {
@@ -94,8 +95,18 @@ where
     }
 }
 
-// Submit to Sqe128 Queue
-impl<M> Submit<Sqe128> for Submitter<'_, '_, M, Sqe128, Cqe32>
+// Submit Sqe64 to Sqe128 Queue
+impl<A, M> Submit<Sqe64> for Submitter<'_, '_, A, M, Sqe128, Cqe32>
+where
+    M: Mode,
+{
+    fn push(&mut self, sqe: Sqe64) -> Result<Null, Sqe64> {
+        self.push_impl(sqe)
+    }
+}
+
+// Submit Sqe128 to Sqe128 Queue
+impl<A, M> Submit<Sqe128> for Submitter<'_, '_, A, M, Sqe128, Cqe32>
 where
     M: Mode,
 {
@@ -105,7 +116,7 @@ where
 }
 
 // Submit Sqe64 to SqeMix Queue
-impl<M> Submit<Sqe64> for Submitter<'_, '_, M, SqeMix, CqeMix>
+impl<A, M> Submit<Sqe64> for Submitter<'_, '_, A, M, SqeMix, CqeMix>
 where
     M: Mode,
 {
@@ -115,7 +126,7 @@ where
 }
 
 // Submit Sqe128 to SqeMix Queue
-impl<M> Submit<Sqe128> for Submitter<'_, '_, M, SqeMix, CqeMix>
+impl<A, M> Submit<Sqe128> for Submitter<'_, '_, A, M, SqeMix, CqeMix>
 where
     M: Mode,
 {
@@ -130,6 +141,7 @@ where
             if self.size() + 3 > self.queue.size {
                 return Err(sqe)
             }
+            debug!("unaligned slot, padding with Nop128");
             // Nop128 slot checked
             let _ = self.push(Nop128::new().skip_cqe());
         }
@@ -142,7 +154,7 @@ where
 }
 
 // Submit Op
-impl<T, M, S, C> Submit<T> for Submitter<'_, '_, M, S, C>
+impl<T, A, M, S, C> Submit<T> for Submitter<'_, '_, A, M, S, C>
 where
     M: Mode,
     T: Op + Into<S>,
@@ -152,10 +164,10 @@ where
     }
 }
 
-impl<'fd, S, C> Submitter<'_, 'fd, Iopoll, S, C> {
+impl<'fd, A, S, C> Submitter<'_, 'fd, A, Iopoll, S, C> {
     pub fn submit(
         &mut self,
-        enter: &mut UringEnter<'fd, Iopoll, S, C>,
+        enter: &mut UringEnter<'fd, A, Iopoll, S, C>,
         min_complete: u32,
     ) -> Result<u32> {
         self.update();
@@ -164,7 +176,7 @@ impl<'fd, S, C> Submitter<'_, 'fd, Iopoll, S, C> {
     }
 }
 
-impl<S, C> Submitter<'_, '_, Sqpoll, S, C> {
+impl<A, S, C> Submitter<'_, '_, A, Sqpoll, S, C> {
     pub fn submit(&mut self) {
         self.update();
     }

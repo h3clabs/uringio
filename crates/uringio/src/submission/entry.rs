@@ -62,6 +62,12 @@ impl Sqe64 {
     }
 }
 
+impl From<Sqe64> for IoUringSqe {
+    fn from(sqe: Sqe64) -> Self {
+        sqe.raw
+    }
+}
+
 impl Deref for Sqe64 {
     type Target = IoUringSqe;
 
@@ -104,6 +110,18 @@ impl Sqe128 {
     #[inline]
     pub fn uring_cmd(&mut self) -> &mut [u8; 80] {
         unsafe { transmute(&mut self.addr3_or_cmd.cmd) }
+    }
+}
+
+impl From<Sqe64> for Sqe128 {
+    fn from(sqe: Sqe64) -> Self {
+        Self::new(sqe.raw)
+    }
+}
+
+impl From<Sqe128> for IoUringSqe {
+    fn from(sqe: Sqe128) -> Self {
+        sqe.raw
     }
 }
 

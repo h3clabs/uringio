@@ -1,7 +1,7 @@
 pub use rustix::{
     fd::{AsFd, AsRawFd, BorrowedFd, OwnedFd, RawFd},
     ffi::c_void,
-    io::Result,
+    io::{ReadWriteFlags, Result},
     io_uring::{
         IORING_OFF_CQ_RING as IOURING_OFF_CQ_RING, IORING_OFF_SQ_RING as IOURING_OFF_SQ_RING,
         IORING_OFF_SQES as IOURING_OFF_SQES, IoringCqFlags as IoUringCqFlags,
@@ -14,6 +14,12 @@ pub use rustix::{
         io_uring_setup, io_uring_sqe as IoUringSqe, io_uring_user_data as IoUringUserData,
     },
 };
+
+pub const IOURING_MAX_SQ_ENTRIES: u32 = 1 << 15;
+
+pub const IOURING_MAX_CQ_ENTRIES: u32 = IOURING_MAX_SQ_ENTRIES * 2;
+
+pub const IOURING_IO_RINGS_SIZE: usize = 64; // size_of::<struct io_rings {...}>()
 
 // TODO: patch to rustix
 #[derive(Debug, Copy, Clone, Default)]

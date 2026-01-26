@@ -2,9 +2,9 @@ use std::marker::PhantomData;
 
 use crate::{
     operator::{Op, fd::OpFd},
-    platform::{
-        io::ReadWriteFlags,
-        iouring::{IoUringOp, IoUringPiAttr, IoUringPtr, IoUringSqeFlags, IoUringUserData, RawFd},
+    platform::iouring::{
+        IoUringOp, IoUringPiAttr, IoUringPtr, IoUringSqeFlags, IoUringUserData, RawFd,
+        ReadWriteFlags,
     },
     shared::macros::op,
     submission::entry::Sqe64,

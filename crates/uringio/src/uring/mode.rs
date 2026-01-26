@@ -1,11 +1,12 @@
 use std::sync::atomic::Ordering;
 
 use crate::{
+    arena::mmap::MmapArena,
     completion::entry::Cqe,
     platform::iouring::{IoUringEnterFlags, IoUringSetupFlags},
     shared::constant::DEFAULT_SQ_POLL_IDLE,
     submission::{entry::Sqe, queue::SubmissionQueue},
-    uring::args::SetupArgs,
+    uring::args::UringArgs,
 };
 
 #[derive(Debug)]
@@ -28,9 +29,9 @@ pub trait Mode: Sized {
         Ty::Sqpoll => IoUringEnterFlags::empty(),
     };
 
-    fn get_sq_head<S, C>(sq: &SubmissionQueue<'_, Self, S, C>) -> u32;
+    fn get_sq_head<A, S, C>(sq: &SubmissionQueue<'_, A, Self, S, C>) -> u32;
 
-    fn set_sq_tail<S, C>(sq: &mut SubmissionQueue<'_, Self, S, C>, tail: u32);
+    fn set_sq_tail<A, S, C>(sq: &mut SubmissionQueue<'_, A, Self, S, C>, tail: u32);
 }
 
 /// ## Iopoll
@@ -41,25 +42,25 @@ impl Mode for Iopoll {
     const TYPE: Ty = Ty::Iopoll;
 
     #[inline]
-    fn get_sq_head<S, C>(sq: &SubmissionQueue<'_, Self, S, C>) -> u32 {
+    fn get_sq_head<A, S, C>(sq: &SubmissionQueue<'_, A, Self, S, C>) -> u32 {
         // SAFETY: userspace drive update in IOPOLL mode
         unsafe { *sq.k_head.as_ptr() }
     }
 
     #[inline]
-    fn set_sq_tail<S, C>(sq: &mut SubmissionQueue<'_, Self, S, C>, tail: u32) {
+    fn set_sq_tail<A, S, C>(sq: &mut SubmissionQueue<'_, A, Self, S, C>, tail: u32) {
         // SAFETY: userspace drive update in IOPOLL mode
         unsafe { *sq.k_tail.as_ptr() = tail }
     }
 }
 
 impl Iopoll {
-    pub fn new<S, C>(entries: u32) -> SetupArgs<Self, S, C>
+    pub fn new<'fd, S, C>(entries: u32) -> UringArgs<MmapArena<'fd, Self, S, C>, Self, S, C>
     where
         S: Sqe,
         C: Cqe,
     {
-        SetupArgs::new(entries)
+        UringArgs::new(entries)
             .iopoll()
             .clamp()
             .submit_all()
@@ -80,23 +81,23 @@ impl Mode for Sqpoll {
     const TYPE: Ty = Ty::Sqpoll;
 
     #[inline]
-    fn get_sq_head<S, C>(sq: &SubmissionQueue<'_, Self, S, C>) -> u32 {
+    fn get_sq_head<A, S, C>(sq: &SubmissionQueue<'_, A, Self, S, C>) -> u32 {
         sq.k_head.load(Ordering::Acquire)
     }
 
     #[inline]
-    fn set_sq_tail<S, C>(sq: &mut SubmissionQueue<'_, Self, S, C>, tail: u32) {
+    fn set_sq_tail<A, S, C>(sq: &mut SubmissionQueue<'_, A, Self, S, C>, tail: u32) {
         sq.k_tail.store(tail, Ordering::Release);
     }
 }
 
 impl Sqpoll {
-    pub fn new<S, C>(entries: u32) -> SetupArgs<Self, S, C>
+    pub fn new<'fd, S, C>(entries: u32) -> UringArgs<MmapArena<'fd, Self, S, C>, Self, S, C>
     where
         S: Sqe,
         C: Cqe,
     {
-        SetupArgs::new(entries)
+        UringArgs::new(entries)
             .sqpoll(DEFAULT_SQ_POLL_IDLE)
             .clamp()
             .submit_all()

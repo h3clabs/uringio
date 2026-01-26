@@ -12,6 +12,8 @@
         "getevents",
         "h3clabs",
         "hugepage",
+        "hugepages",
+        "hugetlb",
         "impls",
         "insta",
         "iopoll",

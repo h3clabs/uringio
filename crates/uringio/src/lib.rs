@@ -3,8 +3,8 @@
 
 //! # Uring IO
 
+pub mod arena;
 pub mod completion;
-pub mod mmap_arena;
 pub mod operator;
 pub mod platform;
 pub mod register;

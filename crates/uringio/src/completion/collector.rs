@@ -11,16 +11,16 @@ use crate::{
 };
 
 #[derive(Debug)]
-pub struct Collector<'c, 'fd, M, S, C>
+pub struct Collector<'c, 'fd, A, M, S, C>
 where
     M: Mode,
 {
     pub(crate) head: u32,
     pub(crate) tail: u32,
-    pub queue: &'c mut CompletionQueue<'fd, M, S, C>,
+    pub queue: &'c mut CompletionQueue<'fd, A, M, S, C>,
 }
 
-impl<M, S, C> Collector<'_, '_, M, S, C>
+impl<A, M, S, C> Collector<'_, '_, A, M, S, C>
 where
     M: Mode,
 {
@@ -50,7 +50,7 @@ where
     }
 }
 
-impl<M, S, C> Drop for Collector<'_, '_, M, S, C>
+impl<A, M, S, C> Drop for Collector<'_, '_, A, M, S, C>
 where
     M: Mode,
 {
@@ -59,7 +59,7 @@ where
     }
 }
 
-impl<'c, M, S, C> Iterator for Collector<'c, '_, M, S, C>
+impl<'c, A, M, S, C> Iterator for Collector<'c, '_, A, M, S, C>
 where
     M: Mode,
 {
@@ -83,7 +83,7 @@ where
     }
 }
 
-impl<M, S, C> ExactSizeIterator for Collector<'_, '_, M, S, C>
+impl<A, M, S, C> ExactSizeIterator for Collector<'_, '_, A, M, S, C>
 where
     M: Mode,
 {
@@ -94,14 +94,15 @@ where
     }
 }
 
-impl<'fd, S, C> Collector<'_, 'fd, Sqpoll, S, C> {
+impl<'fd, A, S, C> Collector<'_, 'fd, A, Sqpoll, S, C> {
     pub fn flush(
         &mut self,
-        enter: &mut UringEnter<'fd, Sqpoll, S, C>,
+        enter: &mut UringEnter<'fd, A, Sqpoll, S, C>,
         min_complete: u32,
     ) -> Result<u32> {
         // TODO: void fence(SeqCst): https://github.com/axboe/liburing/issues/541
         atomic::fence(Ordering::SeqCst);
+
         let sq_flags = self.queue.sq_flags(Ordering::Relaxed);
         let sq_wakeup = sq_flags.contains(IoUringSqFlags::NEED_WAKEUP);
         let cq_overflow = sq_flags.contains(IoUringSqFlags::CQ_OVERFLOW);
