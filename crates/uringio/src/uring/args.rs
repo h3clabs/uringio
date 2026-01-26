@@ -10,17 +10,17 @@ use crate::{
 
 #[derive(Debug)]
 #[repr(transparent)]
-pub struct SetupArgs<S, C, M> {
+pub struct SetupArgs<M, S, C> {
     pub params: IoUringParams,
 
-    _marker_: PhantomData<(S, C, M)>,
+    _marker_: PhantomData<(M, S, C)>,
 }
 
-impl<S, C, M> SetupArgs<S, C, M>
+impl<M, S, C> SetupArgs<M, S, C>
 where
+    M: Mode,
     S: Sqe,
     C: Cqe,
-    M: Mode,
 {
     pub fn new(entries: u32) -> Self {
         let mut params = IoUringParams::default();
@@ -129,7 +129,7 @@ where
         self
     }
 
-    pub fn setup(self) -> Result<(OwnedFd, UringArgs<S, C, M>)> {
+    pub fn setup(self) -> Result<(OwnedFd, UringArgs<M, S, C>)> {
         let Self { mut params, .. } = self;
         let fd = unsafe { io_uring_setup(params.sq_entries, &mut params)? };
 
@@ -145,12 +145,12 @@ where
 }
 
 #[derive(Debug)]
-pub struct UringArgs<S, C, M> {
+pub struct UringArgs<M, S, C> {
     params: IoUringParams,
-    _marker_: PhantomData<(S, C, M)>,
+    _marker_: PhantomData<(M, S, C)>,
 }
 
-impl<S, C, M> UringArgs<S, C, M>
+impl<M, S, C> UringArgs<M, S, C>
 where
     S: Sqe,
     C: Cqe,
@@ -180,7 +180,7 @@ where
     }
 }
 
-impl<S, C, M> Deref for UringArgs<S, C, M> {
+impl<M, S, C> Deref for UringArgs<M, S, C> {
     type Target = IoUringParams;
 
     fn deref(&self) -> &Self::Target {

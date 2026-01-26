@@ -22,20 +22,20 @@ use crate::{
 
 /// ## Uring
 #[derive(Debug)]
-pub struct Uring<'fd, S, C, M> {
-    pub enter: UringEnter<'fd, S, C, M>,
-    pub sq: SubmissionQueue<'fd, S, C, M>,
-    pub cq: CompletionQueue<'fd, S, C, M>,
-    arena: MmapArena<'fd, S, C, M>,
+pub struct Uring<'fd, M, S, C> {
+    pub enter: UringEnter<'fd, M, S, C>,
+    pub sq: SubmissionQueue<'fd, M, S, C>,
+    pub cq: CompletionQueue<'fd, M, S, C>,
+    arena: MmapArena<'fd, M, S, C>,
 }
 
-impl<'fd, S, C, M> Uring<'fd, S, C, M>
+impl<'fd, M, S, C> Uring<'fd, M, S, C>
 where
+    M: Mode,
     S: Sqe,
     C: Cqe,
-    M: Mode,
 {
-    pub fn new(fd: &'fd OwnedFd, args: &UringArgs<S, C, M>) -> Result<Self> {
+    pub fn new(fd: &'fd OwnedFd, args: &UringArgs<M, S, C>) -> Result<Self> {
         unsafe {
             let arena = MmapArena::new(fd, args)?;
 
@@ -51,31 +51,31 @@ where
         Ok(self)
     }
 
-    pub fn arena(&self) -> &MmapArena<'fd, S, C, M> {
+    pub fn arena(&self) -> &MmapArena<'fd, M, S, C> {
         &self.arena
     }
 
-    pub fn submitter(&mut self) -> Submitter<'_, 'fd, S, C, M> {
+    pub fn submitter(&mut self) -> Submitter<'_, 'fd, M, S, C> {
         self.sq.submitter()
     }
 
-    pub fn collector(&mut self) -> Collector<'_, 'fd, S, C, M> {
+    pub fn collector(&mut self) -> Collector<'_, 'fd, M, S, C> {
         self.cq.collector()
     }
 
     pub fn borrow(
         &mut self,
-    ) -> (&mut UringEnter<'fd, S, C, M>, Submitter<'_, 'fd, S, C, M>, Collector<'_, 'fd, S, C, M>)
+    ) -> (&mut UringEnter<'fd, M, S, C>, Submitter<'_, 'fd, M, S, C>, Collector<'_, 'fd, M, S, C>)
     {
         (&mut self.enter, self.sq.submitter(), self.cq.collector())
     }
 }
 
-pub type UringIo<'fd, M> = Uring<'fd, Sqe64, Cqe16, M>;
+pub type UringIo<'fd, M> = Uring<'fd, M, Sqe64, Cqe16>;
 
-pub type Uring128<'fd, M> = Uring<'fd, Sqe128, Cqe32, M>;
+pub type Uring128<'fd, M> = Uring<'fd, M, Sqe128, Cqe32>;
 
-pub type UringMix<'fd, M> = Uring<'fd, SqeMix, CqeMix, M>;
+pub type UringMix<'fd, M> = Uring<'fd, M, SqeMix, CqeMix>;
 
 // TODO: UringIo self referential lifetime
 // #[derive(Debug)]

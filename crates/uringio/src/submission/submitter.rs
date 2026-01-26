@@ -18,16 +18,16 @@ use crate::{
 
 /// ## Submitter
 #[derive(Debug)]
-pub struct Submitter<'s, 'fd, S, C, M>
+pub struct Submitter<'s, 'fd, M, S, C>
 where
     M: Mode,
 {
     pub(crate) head: u32,
     pub(crate) tail: u32,
-    pub queue: &'s mut SubmissionQueue<'fd, S, C, M>,
+    pub queue: &'s mut SubmissionQueue<'fd, M, S, C>,
 }
 
-impl<S, C, M> Submitter<'_, '_, S, C, M>
+impl<M, S, C> Submitter<'_, '_, M, S, C>
 where
     M: Mode,
 {
@@ -71,7 +71,7 @@ where
     }
 }
 
-impl<S, C, M> Drop for Submitter<'_, '_, S, C, M>
+impl<M, S, C> Drop for Submitter<'_, '_, M, S, C>
 where
     M: Mode,
 {
@@ -85,7 +85,7 @@ pub trait Submit<T> {
 }
 
 // Submit to Sqe64 Queue
-impl<M> Submit<Sqe64> for Submitter<'_, '_, Sqe64, Cqe16, M>
+impl<M> Submit<Sqe64> for Submitter<'_, '_, M, Sqe64, Cqe16>
 where
     M: Mode,
 {
@@ -95,7 +95,7 @@ where
 }
 
 // Submit to Sqe128 Queue
-impl<M> Submit<Sqe128> for Submitter<'_, '_, Sqe128, Cqe32, M>
+impl<M> Submit<Sqe128> for Submitter<'_, '_, M, Sqe128, Cqe32>
 where
     M: Mode,
 {
@@ -105,7 +105,7 @@ where
 }
 
 // Submit Sqe64 to SqeMix Queue
-impl<M> Submit<Sqe64> for Submitter<'_, '_, SqeMix, CqeMix, M>
+impl<M> Submit<Sqe64> for Submitter<'_, '_, M, SqeMix, CqeMix>
 where
     M: Mode,
 {
@@ -115,7 +115,7 @@ where
 }
 
 // Submit Sqe128 to SqeMix Queue
-impl<M> Submit<Sqe128> for Submitter<'_, '_, SqeMix, CqeMix, M>
+impl<M> Submit<Sqe128> for Submitter<'_, '_, M, SqeMix, CqeMix>
 where
     M: Mode,
 {
@@ -142,7 +142,7 @@ where
 }
 
 // Submit Op
-impl<T, S, C, M> Submit<T> for Submitter<'_, '_, S, C, M>
+impl<T, M, S, C> Submit<T> for Submitter<'_, '_, M, S, C>
 where
     M: Mode,
     T: Op + Into<S>,
@@ -152,10 +152,10 @@ where
     }
 }
 
-impl<'fd, S, C> Submitter<'_, 'fd, S, C, Iopoll> {
+impl<'fd, S, C> Submitter<'_, 'fd, Iopoll, S, C> {
     pub fn submit(
         &mut self,
-        enter: &mut UringEnter<'fd, S, C, Iopoll>,
+        enter: &mut UringEnter<'fd, Iopoll, S, C>,
         min_complete: u32,
     ) -> Result<u32> {
         self.update();
@@ -164,7 +164,7 @@ impl<'fd, S, C> Submitter<'_, 'fd, S, C, Iopoll> {
     }
 }
 
-impl<S, C> Submitter<'_, '_, S, C, Sqpoll> {
+impl<S, C> Submitter<'_, '_, Sqpoll, S, C> {
     pub fn submit(&mut self) {
         self.update();
     }

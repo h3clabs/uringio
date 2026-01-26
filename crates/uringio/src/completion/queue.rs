@@ -16,7 +16,7 @@ use crate::{
 
 /// ## Completion Queue
 #[derive(Debug)]
-pub struct CompletionQueue<'fd, S, C, M> {
+pub struct CompletionQueue<'fd, M, S, C> {
     pub cqes: NonNull<C>,
     pub k_head: &'fd AtomicU32,
     pub k_tail: &'fd AtomicU32,
@@ -27,10 +27,10 @@ pub struct CompletionQueue<'fd, S, C, M> {
 
     pub k_sq_flags: &'fd AtomicU32,
 
-    _marker_: PhantomData<(S, M)>,
+    _marker_: PhantomData<(M, S)>,
 }
 
-impl<S, C, M> CompletionQueue<'_, S, C, M> {
+impl<M, S, C> CompletionQueue<'_, M, S, C> {
     pub const unsafe fn new(sq_mmap: &Mmap, cq_mmap: &Mmap, params: &IoUringParams) -> Self {
         let IoUringParams { sq_off, cq_off, .. } = params;
 
@@ -81,7 +81,7 @@ impl<S, C, M> CompletionQueue<'_, S, C, M> {
     }
 }
 
-impl<'fd, S, C, M> CompletionQueue<'fd, S, C, M>
+impl<'fd, M, S, C> CompletionQueue<'fd, M, S, C>
 where
     M: Mode,
 {
@@ -101,12 +101,12 @@ where
         self.k_head.store(head, Ordering::Release);
     }
 
-    pub fn collector(&mut self) -> Collector<'_, 'fd, S, C, M> {
+    pub fn collector(&mut self) -> Collector<'_, 'fd, M, S, C> {
         Collector { head: self.head(), tail: self.tail(), queue: self }
     }
 }
 
-impl<S, C, M> Index<u32> for CompletionQueue<'_, S, C, M> {
+impl<M, S, C> Index<u32> for CompletionQueue<'_, M, S, C> {
     type Output = C;
 
     #[inline]
@@ -116,7 +116,7 @@ impl<S, C, M> Index<u32> for CompletionQueue<'_, S, C, M> {
     }
 }
 
-impl<S, C, M> IndexMut<u32> for CompletionQueue<'_, S, C, M> {
+impl<M, S, C> IndexMut<u32> for CompletionQueue<'_, M, S, C> {
     #[inline]
     fn index_mut(&mut self, index: u32) -> &mut Self::Output {
         unsafe { self.get_cqe(index).as_mut() }

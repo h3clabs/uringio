@@ -16,20 +16,20 @@ use crate::{
 
 /// ## Mmap Arena
 #[derive(Debug)]
-pub struct MmapArena<'fd, S, C, M> {
+pub struct MmapArena<'fd, M, S, C> {
     pub sq_mmap: Mmap,
     pub sqes_mmap: Mmap,
     cq_mmap: Option<Mmap>,
 
-    _marker_: PhantomData<(&'fd OwnedFd, S, C, M)>,
+    _marker_: PhantomData<(&'fd OwnedFd, M, S, C)>,
 }
 
-impl<S, C, M> MmapArena<'_, S, C, M>
+impl<M, S, C> MmapArena<'_, M, S, C>
 where
     S: Sqe,
     C: Cqe,
 {
-    pub fn new<Fd>(fd: &Fd, args: &UringArgs<S, C, M>) -> Result<Self>
+    pub fn new<Fd>(fd: &Fd, args: &UringArgs<M, S, C>) -> Result<Self>
     where
         Fd: AsFd,
     {

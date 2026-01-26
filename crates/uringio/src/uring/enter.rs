@@ -8,20 +8,20 @@ use crate::{
 };
 
 #[derive(Debug)]
-pub struct UringEnter<'fd, S, C, M> {
+pub struct UringEnter<'fd, M, S, C> {
     pub(crate) enter_fd: BorrowedFd<'fd>,
     // TODO: init flags
     pub(crate) enter_flags: IoUringEnterFlags,
     pub(crate) features: IoUringFeatureFlags,
 
-    _marker_: PhantomData<(S, C, M)>,
+    _marker_: PhantomData<(M, S, C)>,
 }
 
-impl<'fd, S, C, M> UringEnter<'fd, S, C, M>
+impl<'fd, M, S, C> UringEnter<'fd, M, S, C>
 where
     M: Mode,
 {
-    pub fn new(fd: &'fd OwnedFd, args: &UringArgs<S, C, M>) -> Self {
+    pub fn new(fd: &'fd OwnedFd, args: &UringArgs<M, S, C>) -> Self {
         Self {
             enter_fd: fd.as_fd(),
             enter_flags: M::ENTER_FLAG,
@@ -31,7 +31,7 @@ where
     }
 }
 
-impl<S, C, M> UringEnter<'_, S, C, M> {
+impl<M, S, C> UringEnter<'_, M, S, C> {
     #[inline]
     pub fn features(&self) -> &IoUringFeatureFlags {
         &self.features
@@ -65,7 +65,7 @@ impl<S, C, M> UringEnter<'_, S, C, M> {
     }
 }
 
-impl<S, C, M> Drop for UringEnter<'_, S, C, M> {
+impl<M, S, C> Drop for UringEnter<'_, M, S, C> {
     fn drop(&mut self) {
         if self.is_ring_registered() {
             unsafe {

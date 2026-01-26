@@ -11,16 +11,16 @@ use crate::{
 };
 
 #[derive(Debug)]
-pub struct Collector<'c, 'fd, S, C, M>
+pub struct Collector<'c, 'fd, M, S, C>
 where
     M: Mode,
 {
     pub(crate) head: u32,
     pub(crate) tail: u32,
-    pub queue: &'c mut CompletionQueue<'fd, S, C, M>,
+    pub queue: &'c mut CompletionQueue<'fd, M, S, C>,
 }
 
-impl<S, C, M> Collector<'_, '_, S, C, M>
+impl<M, S, C> Collector<'_, '_, M, S, C>
 where
     M: Mode,
 {
@@ -50,7 +50,7 @@ where
     }
 }
 
-impl<S, C, M> Drop for Collector<'_, '_, S, C, M>
+impl<M, S, C> Drop for Collector<'_, '_, M, S, C>
 where
     M: Mode,
 {
@@ -59,7 +59,7 @@ where
     }
 }
 
-impl<'c, S, C, M> Iterator for Collector<'c, '_, S, C, M>
+impl<'c, M, S, C> Iterator for Collector<'c, '_, M, S, C>
 where
     M: Mode,
 {
@@ -83,7 +83,7 @@ where
     }
 }
 
-impl<S, C, M> ExactSizeIterator for Collector<'_, '_, S, C, M>
+impl<M, S, C> ExactSizeIterator for Collector<'_, '_, M, S, C>
 where
     M: Mode,
 {
@@ -94,10 +94,10 @@ where
     }
 }
 
-impl<'fd, S, C> Collector<'_, 'fd, S, C, Sqpoll> {
+impl<'fd, S, C> Collector<'_, 'fd, Sqpoll, S, C> {
     pub fn flush(
         &mut self,
-        enter: &mut UringEnter<'fd, S, C, Sqpoll>,
+        enter: &mut UringEnter<'fd, Sqpoll, S, C>,
         min_complete: u32,
     ) -> Result<u32> {
         // TODO: void fence(SeqCst): https://github.com/axboe/liburing/issues/541

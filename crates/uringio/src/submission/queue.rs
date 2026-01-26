@@ -16,7 +16,7 @@ use crate::{
 
 /// ## Submission Queue
 #[derive(Debug)]
-pub struct SubmissionQueue<'fd, S, C, M> {
+pub struct SubmissionQueue<'fd, M, S, C> {
     pub sqes: NonNull<S>,
     pub k_head: &'fd AtomicU32,
     pub k_tail: &'fd AtomicU32,
@@ -25,10 +25,10 @@ pub struct SubmissionQueue<'fd, S, C, M> {
     pub k_flags: &'fd AtomicU32,
     pub k_dropped: &'fd AtomicU32,
 
-    _marker_: PhantomData<(C, M)>,
+    _marker_: PhantomData<(M, C)>,
 }
 
-impl<S, C, M> SubmissionQueue<'_, S, C, M> {
+impl<M, S, C> SubmissionQueue<'_, M, S, C> {
     pub unsafe fn new(sq_mmap: &Mmap, sqes_mmap: &Mmap, params: &IoUringParams) -> Self {
         let IoUringParams { sq_off, .. } = params;
 
@@ -74,7 +74,7 @@ impl<S, C, M> SubmissionQueue<'_, S, C, M> {
     }
 }
 
-impl<'fd, S, C, M> SubmissionQueue<'fd, S, C, M>
+impl<'fd, M, S, C> SubmissionQueue<'fd, M, S, C>
 where
     M: Mode,
 {
@@ -94,12 +94,12 @@ where
         M::set_sq_tail(self, tail);
     }
 
-    pub fn submitter(&mut self) -> Submitter<'_, 'fd, S, C, M> {
+    pub fn submitter(&mut self) -> Submitter<'_, 'fd, M, S, C> {
         Submitter { head: self.head(), tail: self.tail(), queue: self }
     }
 }
 
-impl<S, C, M> Index<u32> for SubmissionQueue<'_, S, C, M> {
+impl<M, S, C> Index<u32> for SubmissionQueue<'_, M, S, C> {
     type Output = S;
 
     #[inline]
@@ -109,7 +109,7 @@ impl<S, C, M> Index<u32> for SubmissionQueue<'_, S, C, M> {
     }
 }
 
-impl<S, C, M> IndexMut<u32> for SubmissionQueue<'_, S, C, M> {
+impl<M, S, C> IndexMut<u32> for SubmissionQueue<'_, M, S, C> {
     #[inline]
     fn index_mut(&mut self, index: u32) -> &mut Self::Output {
         unsafe { self.get_sqe(index).as_mut() }

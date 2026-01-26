@@ -12,7 +12,7 @@ use crate::{
     uring::enter::UringEnter,
 };
 
-impl<S, C, M> UringEnter<'_, S, C, M> {
+impl<M, S, C> UringEnter<'_, M, S, C> {
     #[inline]
     pub fn is_ring_registered(&self) -> bool {
         self.enter_flags.contains(IoUringEnterFlags::REGISTERED_RING)
